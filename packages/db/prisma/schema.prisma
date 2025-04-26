@@ -1,0 +1,135 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  userId    String  @id @default(cuid())
+  username  String
+  otp       String
+  mobile    String  @unique
+  token     String  @default("")
+  suspended Boolean @default(false)
+  wallet    Wallet?
+  bets Bet[]
+  payments Payments[]
+  withdrawls Withdrawals[]
+}
+
+model Admin{
+  adminId  String @id @default(cuid())
+  adminName String
+  email String @unique
+  password String
+  role AdminRole @default(admin)
+}
+
+model Banner {
+  bannerId String @id @default(cuid())
+  imageUrl String @db.Text
+  redirectUrl String @db.Text
+}
+
+enum AdminRole {
+  admin
+  superadmin
+}
+
+
+model Wallet {
+  walletId  String   @id @default(cuid())
+  userId    String   @unique
+  balance   Float    @default(100)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [userId], onDelete: Cascade)
+}
+
+model Room{
+  roomId String @id
+  bets Bet[]
+  maxRate Float
+}
+
+model Bet{
+  betId String @id
+  roomId String
+  room Room @relation(fields: [roomId], references: [roomId])
+  userId String
+  user User @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  amount Float
+  cashout Boolean @default(false)
+  cashoutValue Float?
+}
+
+model Payments{
+  paymentId String @id @default(cuid())
+  amount Float
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  userId String
+  user User @relation(fields: [userId], references: [userId])
+  paymentStatus PaymentStatus @default(Pending)
+  currency String @default("INR")
+}
+
+model Ticket {
+  ticketId    String       @id @default(cuid())
+  issue       String
+  email       String
+  name        String
+  description String
+  status      TicketStatus @default(Open)
+  createdAt   DateTime     @default(now())
+  image       String?
+}
+
+
+
+
+model Withdrawals{
+  withdrawlId String @id @default(cuid())
+  amount Float
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  paymentStatus PaymentStatus @default(Pending)
+  currency String @default("INR")
+  withdrawType WithdrawType
+  userId String
+  username String
+  user User @relation(fields: [userId], references: [userId])
+  accountNumber String?
+  ifsc String?
+  upi String?
+  cryptoId String?
+}
+
+enum WithdrawType {
+  Bank
+  UPI
+  Crypto
+}
+
+
+enum PaymentStatus {
+  Pending
+  Success
+  Failed
+}
+
+enum TicketStatus {
+  Open
+  Closed
+}
+
+
