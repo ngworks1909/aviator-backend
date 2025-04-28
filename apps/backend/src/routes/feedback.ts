@@ -1,6 +1,7 @@
 import { Router } from "express";
 import z from 'zod'
 import { prisma } from "../lib/client";
+import { verifyAdmin } from "../middleware/verifyUser";
 
 const router = Router()
 
@@ -27,7 +28,7 @@ router.post('/create', async(req, res) => {
 })
 
 
-router.get('/fetchall', async(_, res) => {
+router.get('/fetchall', verifyAdmin, async(_, res) => {
     try {
         const feedbacks = await prisma.feedback.findMany({
             take: 100
