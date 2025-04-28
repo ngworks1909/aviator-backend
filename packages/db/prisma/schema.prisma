@@ -114,6 +114,11 @@ model Withdrawals{
   cryptoId String?
 }
 
+model Feedback {
+  feedbackId String @id @default(cuid())
+  text String @db.Text
+}
+
 enum WithdrawType {
   Bank
   UPI

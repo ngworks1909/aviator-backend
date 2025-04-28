@@ -7,6 +7,7 @@ import withdrawRouter from './routes/withdrawls'
 import adminRouter from './routes/admin'
 import bannerRouter from './routes/banner'
 import ticketRouter from './routes/ticket'
+import feedbackRouter from './routes/feedback'
 
 dotenv.config()
 
@@ -25,6 +26,7 @@ app.use('/api/withdrawls', withdrawRouter);
 app.use('/api/admin', adminRouter);
 app.use('/api/banner', bannerRouter);
 app.use('/api/ticket', ticketRouter)
+app.use('/api/feedback', feedbackRouter)
 
 
 const PORT = process.env.PORT || 3001
