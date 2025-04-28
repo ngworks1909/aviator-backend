@@ -34,7 +34,6 @@ router.get('/fetchallbanners', async(_, res) => {
       select: {
         bannerId: true,
         imageUrl: true,
-        redirectUrl: true
       }
     });
     return res.status(200).json({banners})
