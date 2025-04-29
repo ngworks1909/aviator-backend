@@ -13,73 +13,88 @@ router.post('/create', authenticateToken, async(req: UserRequest, res) => {
             return res.status(401).json({message: 'Unauthorized'})
         }
         const {userId} = authUser;
-        const user = await prisma.user.findUnique({
-            where: {
-                userId
-            },
-            select: {
-               userId: true
-            }
-        });
-  
-        if (!user) {
-            return res.status(400).json({ message: 'User not found' });
-        }
-
-        const isValidWithdraw = createWithdrawSchema.safeParse(req.body);
-        if(!isValidWithdraw.success){
-            return res.status(400).json({message: isValidWithdraw.error.message})
-        }
-
-        const {withdrawType, amount, username} = isValidWithdraw.data;
-
-        if(withdrawType === "Bank"){
-            const {accountNumber, ifsc} = isValidWithdraw.data;
-            if(!accountNumber || !ifsc ){
-                return res.status(400).json({message: "Enter account number and ifsc"})
-            }
-            await prisma.withdrawals.create({
-                data: {
-                    userId,
-                    username,
-                    amount,
-                    withdrawType,
-                    accountNumber,
-                    ifsc
+        await prisma.$transaction(async(tx) => {
+            const user = await tx.user.findUnique({
+                where: {
+                    userId
+                },
+                select: {
+                   userId: true,
+                   wallet: {
+                      select: {
+                        balance: true
+                      }
+                   }
                 }
             });
-        }
+      
+            if (!user) {
+                return res.status(400).json({ message: 'User not found' });
+            }
 
-        else if(withdrawType === "UPI"){
-            const {upi} = isValidWithdraw.data;
-            if(!upi){
-                return res.status(400).json({message: "Enter UPI"})
+            if(!user.wallet){
+                return res.status(400).json({ message: 'Wallet not found' });
             }
-            await prisma.withdrawals.create({
-                data: {
-                    userId,
-                    username,
-                    amount,
-                    withdrawType,
-                    upi
-                }
-            });
-        }
-        else{
-            const {cryptoId} = isValidWithdraw.data;
-            if(!cryptoId){
-                return res.status(400).json({message: "Enter crypto id"})
+
+            
+            const isValidWithdraw = createWithdrawSchema.safeParse(req.body);
+            if(!isValidWithdraw.success){
+                return res.status(400).json({message: isValidWithdraw.error.message})
             }
-            await prisma.withdrawals.create({
-                data: {
-                    userId,
-                    username,
-                    amount,
-                    withdrawType,
-                    cryptoId
+            const {withdrawType, amount, username} = isValidWithdraw.data;
+            
+            if(user.wallet.balance < amount){
+                return res.status(400).json({message: "Insufficient funds"})
+            }
+    
+            if(withdrawType === "Bank"){
+                const {accountNumber, ifsc} = isValidWithdraw.data;
+                if(!accountNumber || !ifsc ){
+                    return res.status(400).json({message: "Enter account number and ifsc"})
                 }
-            });
-        }
+                await tx.withdrawals.create({
+                    data: {
+                        userId,
+                        username,
+                        amount,
+                        withdrawType,
+                        accountNumber,
+                        ifsc
+                    }
+                });
+            }
+    
+            else if(withdrawType === "UPI"){
+                const {upi} = isValidWithdraw.data;
+                if(!upi){
+                    return res.status(400).json({message: "Enter UPI"})
+                }
+                await tx.withdrawals.create({
+                    data: {
+                        userId,
+                        username,
+                        amount,
+                        withdrawType,
+                        upi
+                    }
+                });
+            }
+            else{
+                const {cryptoId} = isValidWithdraw.data;
+                if(!cryptoId){
+                    return res.status(400).json({message: "Enter crypto id"})
+                }
+                await tx.withdrawals.create({
+                    data: {
+                        userId,
+                        username,
+                        amount,
+                        withdrawType,
+                        cryptoId
+                    }
+                });
+            }
+        })
         return res.status(200).json({message: "Withdrawal created successfully"})
     } catch (error) {
         return res.status(500).json({message: "Internal server error"})

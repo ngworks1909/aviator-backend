@@ -13,6 +13,10 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model Version{
+  version String @id
+}
+
 model User {
   userId    String  @id @default(cuid())
   username  String

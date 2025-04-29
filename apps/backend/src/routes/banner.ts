@@ -37,7 +37,12 @@ router.get('/fetchallbanners', async(_, res) => {
         redirectUrl: true
       }
     });
-    return res.status(200).json({banners})
+    const version = await prisma.version.findFirst({
+      select: {
+        version: true
+      }
+    }) as {version: string}
+    return res.status(200).json({banners, version: version.version})
   } catch (error) {
     return res.status(500).json({message: 'Internal server error'})
   }
