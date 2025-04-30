@@ -190,7 +190,12 @@ router.get('/fetchall', verifyAdmin, async(_, res) => {
                     select: {
                         betId: true,
                         amount: true,
-                        cashoutValue: true
+                        cashoutValue: true,
+                        room: {
+                            select: {
+                                maxRate: true
+                            }
+                        }
                     }
                 }
             }
