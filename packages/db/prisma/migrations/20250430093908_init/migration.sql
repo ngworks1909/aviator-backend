@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "User" ADD COLUMN     "referralId" TEXT NOT NULL DEFAULT 'A1B3C247';

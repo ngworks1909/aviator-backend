@@ -234,10 +234,11 @@ router.get('/fetchbalance', authenticateToken, async(req: UserRequest, res) => {
       const {userId} = authUser;
       const user = await prisma.user.findUnique({
           where: {
-              userId
+              userId,
           },
           select: {
-             wallet: true
+             wallet: true,
+             referralId: true
           }
       });
       if(!user){
@@ -246,7 +247,7 @@ router.get('/fetchbalance', authenticateToken, async(req: UserRequest, res) => {
       if(!user.wallet){
           return res.status(400).json({message: 'Wallet not found'})
       }
-      return res.status(200).json({balance: user.wallet.balance})
+      return res.status(200).json({balance: user.wallet.balance, referralId: user.referralId})
   } catch (error) {
       return res.status(500).json({message: "Internal server error"})
   }

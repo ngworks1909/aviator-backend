@@ -7,6 +7,31 @@ import { sendMessage } from '../lib/messenger';
 
 const router = express.Router();
 
+function generateReferralId() {
+    const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    const digits = '0123456789';
+  
+    // Pick 3 random letters
+    const randomLetters = Array.from({ length: 3 }, () =>
+      letters.charAt(Math.floor(Math.random() * letters.length))
+    );
+  
+    // Pick 3 random digits
+    const randomDigits = Array.from({ length: 3 }, () =>
+      digits.charAt(Math.floor(Math.random() * digits.length))
+    );
+  
+    // Pick 2 random from both
+    const allChars = letters + digits;
+    const randomOthers = Array.from({ length: 2 }, () =>
+      allChars.charAt(Math.floor(Math.random() * allChars.length))
+    );
+  
+    // Combine and shuffle
+    const combined = [...randomLetters, ...randomDigits, ...randomOthers];
+    return combined.sort(() => 0.5 - Math.random()).join('');
+}
+
 const generateOtp = () => {
     return Math.floor(100000 + Math.random() * 900000).toString()
 }
@@ -16,7 +41,7 @@ router.post('/create', async(req, res) => {
         if(!userValidate.success){
             return res.status(400).json({message: 'Invalid credentials'})
         }
-        const {name, mobile} = userValidate.data;
+        const {name, mobile, referralId} = userValidate.data;
         let user = await prisma.user.findUnique({
             where: {
                 mobile
@@ -31,7 +56,8 @@ router.post('/create', async(req, res) => {
                 data: {
                     username: name,
                     mobile,
-                    otp
+                    otp,
+                    referralId: generateReferralId()
                 }
             });
             await tx.wallet.create({
@@ -39,6 +65,30 @@ router.post('/create', async(req, res) => {
                     userId: user.userId
                 }
             })
+
+            if(referralId){
+                const referredUser = await tx.user.findUnique({
+                    where: {
+                        referralId
+                    }
+                });
+                if(referredUser){
+                    await tx.user.update({
+                        where: {
+                            userId: referredUser.userId
+                        },
+                        data: {
+                            wallet: {
+                                update: {
+                                    balance: {
+                                        increment: 100
+                                    }
+                                }
+                            }
+                        }
+                    })
+                }
+            }
         })
 
         await sendMessage(mobile, otp)
