@@ -8,6 +8,7 @@ import adminRouter from './routes/admin'
 import bannerRouter from './routes/banner'
 import ticketRouter from './routes/ticket'
 import feedbackRouter from './routes/feedback'
+import visitorRouter from './routes/visitors'
 
 dotenv.config()
 
@@ -27,6 +28,7 @@ app.use('/api/admin', adminRouter);
 app.use('/api/banner', bannerRouter);
 app.use('/api/ticket', ticketRouter)
 app.use('/api/feedback', feedbackRouter)
+app.use('/api/visitor', visitorRouter)
 
 
 const PORT = process.env.PORT || 3001
