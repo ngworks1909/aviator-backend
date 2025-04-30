@@ -47,17 +47,25 @@ router.post('/create', async(req, res) => {
                 mobile
             }
         });
-        if(user){
+        if(user && user.verified){
             return res.status(400).json({message: 'User already exists'})
         }
         const otp = generateOtp()
         await prisma.$transaction(async(tx) => {
-            user = await tx.user.create({
-                data: {
+            user = await tx.user.upsert({
+                where: {
+                    mobile
+                },
+                update: {
+                    otp,
+                    referredBy: referralId
+                },
+                create: {
                     username: name,
                     mobile,
                     otp,
-                    referralId: generateReferralId()
+                    referralId: generateReferralId(),
+                    referredBy: referralId
                 }
             });
             await tx.wallet.create({
@@ -65,32 +73,7 @@ router.post('/create', async(req, res) => {
                     userId: user.userId
                 }
             })
-
-            if(referralId){
-                const referredUser = await tx.user.findUnique({
-                    where: {
-                        referralId
-                    }
-                });
-                if(referredUser){
-                    await tx.user.update({
-                        where: {
-                            userId: referredUser.userId
-                        },
-                        data: {
-                            wallet: {
-                                update: {
-                                    balance: {
-                                        increment: 100
-                                    }
-                                }
-                            }
-                        }
-                    })
-                }
-            }
         })
-
         await sendMessage(mobile, otp)
         
         return res.status(200).json({message: 'OTP generated. Please verify.'})        
@@ -177,6 +160,14 @@ router.post('/verifyotp', async(req, res) => {
         const user = await prisma.user.findUnique({
             where: {
                 mobile
+            },
+            select: {
+                otp: true,
+                referredBy: true,
+                userId: true,
+                mobile: true,
+                username: true,
+                verified: true
             }
         });
         if(!user){
@@ -185,6 +176,47 @@ router.post('/verifyotp', async(req, res) => {
         if(otp !== user.otp){
             return res.status(400).json({message: 'Incorrect OTP'})
         }
+
+        if(!user.verified){
+            await prisma.$transaction(async(tx) => {
+                await tx.user.update({
+                    where: {
+                        mobile
+                    },
+                    data: {
+                        verified: true
+                    }
+                });
+                if(user.referredBy){
+                    const referred = await tx.user.findUnique({
+                        where: {
+                            referralId: user.referredBy
+                        },
+                        select: {
+                            userId: true
+                        }
+                    })
+                    if(!referred){
+                        return res.status(400).json({message: 'Referred user not found'})
+                    }
+                    await tx.user.update({
+                        where: {
+                            userId: referred.userId
+                        },
+                        data: {
+                            wallet: {
+                                update: {
+                                    balance: {
+                                        increment: 200
+                                    }
+                                }
+                            }
+                        }
+                    })
+                }
+            })
+        }
+        
         const token = jwt.sign( { mobile: user.mobile, userId: user.userId, username: user.username }, 
             process.env.JWT_SECRET || "secret", 
         );
