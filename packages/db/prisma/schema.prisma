@@ -33,7 +33,7 @@ model User {
   payments Payments[]
   withdrawls Withdrawals[]
   referralId String @unique
-  referredBy String? @unique
+  referredBy String?
   verified Boolean @default(false)
 }
 
