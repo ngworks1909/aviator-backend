@@ -17,6 +17,10 @@ model Version{
   version String @id
 }
 
+model Visitors{
+  visitorId String @id
+}
+
 model User {
   userId    String  @id @default(cuid())
   username  String
