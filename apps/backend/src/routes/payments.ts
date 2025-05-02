@@ -237,7 +237,12 @@ router.get('/fetchbalance', authenticateToken, async(req: UserRequest, res) => {
               userId,
           },
           select: {
-             wallet: true,
+             wallet: {
+                select: {
+                    balance: true,
+                    bonus: true
+                }
+             },
              referralId: true
           }
       });
@@ -247,7 +252,7 @@ router.get('/fetchbalance', authenticateToken, async(req: UserRequest, res) => {
       if(!user.wallet){
           return res.status(400).json({message: 'Wallet not found'})
       }
-      return res.status(200).json({balance: user.wallet.balance, referralId: user.referralId})
+      return res.status(200).json({balance: user.wallet.balance, referralId: user.referralId, bonus: user.wallet.bonus})
   } catch (error) {
       return res.status(500).json({message: "Internal server error"})
   }

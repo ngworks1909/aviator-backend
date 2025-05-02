@@ -60,7 +60,8 @@ enum AdminRole {
 model Wallet {
   walletId  String   @id @default(cuid())
   userId    String   @unique
-  balance   Float    @default(100)
+  bonus     Float    @default(100)
+  balance   Float    @default(0)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   user      User     @relation(fields: [userId], references: [userId], onDelete: Cascade)

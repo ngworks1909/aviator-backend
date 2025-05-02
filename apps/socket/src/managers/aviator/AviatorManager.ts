@@ -63,21 +63,51 @@ class AviatorManager{
                 },
                 select: {
                    balance: true,
-                   walletId: true
+                   walletId: true,
+                   bonus: true
                 }
             })
             if(!wallet) return
-            if(wallet.balance < amount) return
-            await tx.wallet.update({
-                where: {
-                    walletId: wallet.walletId
-                },
-                data: {
-                    balance: {
-                        decrement: amount
+            if(wallet.balance + wallet.bonus < amount) return
+            if(wallet.bonus >= amount){
+                await tx.wallet.update({
+                    where: {
+                        walletId: wallet.walletId
+                    },
+                    data: {
+                        bonus: {
+                            decrement: amount
+                        }
                     }
-                }
-            })
+                })
+            }
+            else if (wallet.bonus > 0 ){
+                await tx.wallet.update({
+                    where: {
+                        walletId: wallet.walletId
+                    },
+                    data: {
+                        bonus: {
+                            set: 0
+                        },
+                        balance: {
+                            set: (wallet.balance + wallet.bonus) - amount
+                        }
+                    }
+                })
+            }
+            else{
+                await tx.wallet.update({
+                    where: {
+                        walletId: wallet.walletId
+                    },
+                    data: {
+                        balance: {
+                            decrement: amount
+                        }
+                    }
+                })
+            }
 
             const betId = createId();
 
