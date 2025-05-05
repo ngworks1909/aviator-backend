@@ -11,7 +11,7 @@ import dotenv from 'dotenv'
 dotenv.config()
 
 const razrKey = process.env.RAZR_KEY
-const razrSecret = process.env.RAZR_SECRET
+const razrSecret = process.env.RAZR_SECRET ?? 'secret'
 
 
 const razorpayInstance = new Razorpay({
@@ -96,9 +96,7 @@ router.post('/create', authenticateToken,  async(req: UserRequest, res) => {
       }
     }
   
-    // Otherwise, verify the successful payment
-    const secret = process.env.RAZR_SECRET ?? 'secret';
-    const generatedSignature = crypto.createHmac('sha256', secret).update(razorpay_order_id + '|' + razorpay_payment_id).digest('hex');
+    const generatedSignature = crypto.createHmac('sha256', razrSecret).update(razorpay_order_id + '|' + razorpay_payment_id).digest('hex');
     if (generatedSignature !== razorpay_signature) {
       return res.status(400).json({ message: 'Invalid signature. Payment verification failed', rzId: `${razorpay_order_id}`, rpId: `${razorpay_payment_id}`, gensig: `${generatedSignature}`, rzSig: `${razorpay_signature}` });
     }

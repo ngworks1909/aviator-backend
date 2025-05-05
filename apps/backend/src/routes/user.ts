@@ -207,7 +207,7 @@ router.post('/verifyotp', async(req, res) => {
                             wallet: {
                                 update: {
                                     bonus: {
-                                        increment: 200
+                                        increment: 100
                                     }
                                 }
                             }
