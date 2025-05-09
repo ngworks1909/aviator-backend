@@ -1,15 +1,23 @@
-import twilio from 'twilio'
-
-const accountSid = `${process.env.TWILIO_ACCOUNT_SID}`;
-const authToken = `${process.env.TWILIO_AUTH_TOKEN}`
-const client = twilio(accountSid, authToken);
-
-
+import axios from 'axios';
 export async function sendMessage(mobile: string, otp: string) {
-    await client.messages
-  .create({
-    body: 'Your OTP for Aviator is ' + otp,
-    to: `+91${mobile}`,
-    from: '+15809522577', 
-  })
+
+  const sendOtp = async (mobile: string, otp: string) => {
+
+      const API = process.env.SMS_KEY;
+      const PHONE = mobile;
+      const OTP = otp;
+      
+      const URL = `https://sms.renflair.in/V1.php?API=${API}&PHONE=${PHONE}&OTP=${OTP}`;
+      
+      axios.get(URL)
+        .then((response: any) => {
+          const data = response.data;
+          console.log('Response:', data);
+        })
+        .catch((error: any) => {
+          console.error('Error:', error);
+        });
+  };
+  
+  return sendOtp(mobile, otp);
 }

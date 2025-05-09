@@ -22,10 +22,12 @@
     "jsonwebtoken": "^9.0.2",
     "nodemailer": "^6.10.1",
     "razorpay": "^2.9.6",
+    "request": "^2.88.2",
     "twilio": "^5.5.2",
     "zod": "^3.24.2"
   },
   "devDependencies": {
-    "@types/nodemailer": "^6.4.17"
+    "@types/nodemailer": "^6.4.17",
+    "@types/request": "^2.48.12"
   }
 }
