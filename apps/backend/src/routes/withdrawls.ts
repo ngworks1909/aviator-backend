@@ -62,6 +62,7 @@ router.post('/create', authenticateToken, async(req: UserRequest, res) => {
                         ifsc
                     }
                 });
+                
             }
     
             else if(withdrawType === "UPI"){
@@ -94,6 +95,17 @@ router.post('/create', authenticateToken, async(req: UserRequest, res) => {
                     }
                 });
             }
+
+            await tx.wallet.update({
+                where: {
+                    userId
+                },
+                data: {
+                    balance: {
+                        decrement: amount
+                    }
+                }
+            })
         })
         return res.status(200).json({message: "Withdrawal created successfully"})
     } catch (error) {
