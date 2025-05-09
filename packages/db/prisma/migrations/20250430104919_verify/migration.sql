@@ -1,3 +1,0 @@
--- AlterTable
-ALTER TABLE "User" ADD COLUMN     "verified" BOOLEAN NOT NULL DEFAULT true,
-ALTER COLUMN "referralId" DROP NOT NULL;

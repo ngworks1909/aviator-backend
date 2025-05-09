@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -13,86 +7,81 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Version{
+model Version {
   version String @id
 }
 
-model Visitors{
+model Visitors {
   visitorId String @id
 }
 
 model User {
-  userId    String  @id @default(cuid())
-  username  String
-  otp       String
-  mobile    String  @unique
-  token     String  @default("")
-  suspended Boolean @default(false)
-  wallet    Wallet?
-  bets Bet[]
-  payments Payments[]
-  withdrawls Withdrawals[]
-  referralId String @unique
+  userId     String        @id @default(cuid())
+  username   String
+  otp        String
+  mobile     String        @unique
+  token      String        @default("")
+  suspended  Boolean       @default(false)
+  referralId String        @unique
+  verified   Boolean       @default(false)
   referredBy String?
-  verified Boolean @default(false)
+  deviceId String?
+  bets       Bet[]
+  payments   Payments[]
+  wallet     Wallet?
+  withdrawls Withdrawals[]
 }
 
-model Admin{
-  adminId  String @id @default(cuid())
+model Admin {
+  adminId   String    @id @default(cuid())
   adminName String
-  email String @unique
-  password String
-  role AdminRole @default(admin)
+  email     String    @unique
+  password  String
+  role      AdminRole @default(admin)
 }
 
 model Banner {
-  bannerId String @id @default(cuid())
-  imageUrl String @db.Text
-  redirectUrl String @db.Text
+  bannerId    String @id @default(cuid())
+  imageUrl    String
+  redirectUrl String
 }
-
-enum AdminRole {
-  admin
-  superadmin
-}
-
 
 model Wallet {
   walletId  String   @id @default(cuid())
   userId    String   @unique
-  bonus     Float    @default(100)
   balance   Float    @default(0)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  bonus     Float    @default(100)
   user      User     @relation(fields: [userId], references: [userId], onDelete: Cascade)
 }
 
-model Room{
-  roomId String @id
-  bets Bet[]
+model Room {
+  roomId  String @id
   maxRate Float
+  bets    Bet[]
 }
 
-model Bet{
-  betId String @id
-  roomId String
-  room Room @relation(fields: [roomId], references: [roomId])
-  userId String
-  user User @relation(fields: [userId], references: [userId], onDelete: Cascade)
-  amount Float
-  cashout Boolean @default(false)
+model Bet {
+  betId        String  @id
+  roomId       String
+  userId       String
+  amount       Float
+  cashout      Boolean @default(false)
   cashoutValue Float?
+  room         Room    @relation(fields: [roomId], references: [roomId])
+  user         User    @relation(fields: [userId], references: [userId], onDelete: Cascade)
 }
 
-model Payments{
-  paymentId String @id @default(cuid())
-  amount Float
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  userId String
-  user User @relation(fields: [userId], references: [userId])
+model Payments {
+  paymentId     String        @id @default(cuid())
+  amount        Float
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  userId        String
   paymentStatus PaymentStatus @default(Pending)
-  currency String @default("INR")
+  currency      String        @default("INR")
+  user          User          @relation(fields: [userId], references: [userId])
 }
 
 model Ticket {
@@ -106,29 +95,31 @@ model Ticket {
   image       String?
 }
 
-
-
-
-model Withdrawals{
-  withdrawlId String @id @default(cuid())
-  amount Float
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+model Withdrawals {
+  withdrawlId   String        @id @default(cuid())
+  amount        Float
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
   paymentStatus PaymentStatus @default(Pending)
-  currency String @default("INR")
-  withdrawType WithdrawType
-  userId String
-  username String
-  user User @relation(fields: [userId], references: [userId])
+  currency      String        @default("INR")
+  withdrawType  WithdrawType
+  userId        String
+  username      String
   accountNumber String?
-  ifsc String?
-  upi String?
-  cryptoId String?
+  ifsc          String?
+  upi           String?
+  cryptoId      String?
+  user          User          @relation(fields: [userId], references: [userId])
 }
 
 model Feedback {
   feedbackId String @id @default(cuid())
-  text String @db.Text
+  text       String
+}
+
+enum AdminRole {
+  admin
+  superadmin
 }
 
 enum WithdrawType {
@@ -136,7 +127,6 @@ enum WithdrawType {
   UPI
   Crypto
 }
-
 
 enum PaymentStatus {
   Pending
@@ -148,5 +138,3 @@ enum TicketStatus {
   Open
   Closed
 }
-
-
