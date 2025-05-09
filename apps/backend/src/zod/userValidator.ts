@@ -5,6 +5,7 @@ export const validateUser = z.object({
     mobile: z.string().refine((value) => {
         return /^[6-9][0-9]{9}$/.test(value);
       }, {message: "Invalid mobile number"}),
+    deviceId: z.string().optional(),
     referralId: z.string().optional()
 })
 

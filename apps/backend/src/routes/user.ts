@@ -41,7 +41,7 @@ router.post('/create', async(req, res) => {
         if(!userValidate.success){
             return res.status(400).json({message: 'Invalid credentials'})
         }
-        const {name, mobile, referralId} = userValidate.data;
+        const {name, mobile, referralId, deviceId} = userValidate.data;
         let user = await prisma.user.findUnique({
             where: {
                 mobile
@@ -65,7 +65,8 @@ router.post('/create', async(req, res) => {
                     mobile,
                     otp,
                     referralId: generateReferralId(),
-                    referredBy: referralId
+                    referredBy: referralId,
+                    deviceId
                 }
             });
             await tx.wallet.create({
@@ -193,11 +194,24 @@ router.post('/verifyotp', async(req, res) => {
                             referralId: user.referredBy
                         },
                         select: {
-                            userId: true
+                            userId: true,
+                            _count: {
+                                select: {
+                                    bets: true,
+                                    payments: {
+                                        where: {
+                                            paymentStatus: 'Success'
+                                        }
+                                    }
+                                }
+                            }
                         }
                     })
                     if(!referred){
                         return res.status(400).json({message: 'Referred user not found'})
+                    }
+                    if(referred._count.bets < 10 || referred._count.payments < 1){
+                        return res.status(400).json({message: 'Referred user must have at least 5 bets or 1 successful payment'})
                     }
                     await tx.user.update({
                         where: {
