@@ -66,7 +66,8 @@ router.post('/create', async(req, res) => {
                     otp,
                     referralId: generateReferralId(),
                     referredBy: referralId,
-                    deviceId
+                    deviceId,
+                    referralStatus: referralId ? 'Pending' : 'None'
                 }
             });
             await tx.wallet.create({

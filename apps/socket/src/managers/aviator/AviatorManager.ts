@@ -45,59 +45,59 @@ class AviatorManager{
         this.game.players.delete(userId);
     }
 
-    public async checkReferral(userId: string){
+    private async addReferral(userId: string){
+        await prisma.user.update({
+            where: {
+                userId
+            },
+            data: {
+                wallet: {
+                    update: {
+                        bonus: {
+                            increment: 100
+                        }
+                    }
+                }
+            }
+        })
+    }
+
+
+
+    private async checkReferral(userId: string){
         const user = await prisma.user.findUnique({
            where: {
-            userId
+            userId,
            },
            select: {
             mobile: true,
-            referredBy: true
-           }
-        })
-        if(!user) return
-            await prisma.$transaction(async(tx) => {
-                if(user.referredBy){
-                    const referred = await tx.user.findUnique({
+            referredBy: true,
+            referralStatus: true,
+            _count: {
+                select: {
+                    bets: true,
+                    payments: {
                         where: {
-                            referralId: user.referredBy
-                        },
-                        select: {
-                            userId: true,
-                            _count: {
-                                select: {
-                                    bets: true,
-                                    payments: {
-                                        where: {
-                                            paymentStatus: 'Success'
-                                        }
-                                    }
-                                }
-                            }
+                            paymentStatus: 'Success'
                         }
-                    })
-                    if(!referred){
-                        return
                     }
-                    if(referred._count.bets < 10 || referred._count.payments < 1){
-                        return
-                    }
-                    await tx.user.update({
-                        where: {
-                            userId: referred.userId
-                        },
-                        data: {
-                            wallet: {
-                                update: {
-                                    bonus: {
-                                        increment: 100
-                                    }
-                                }
-                            }
-                        }
-                    })
                 }
-            })
+            }
+           }
+        });
+
+        if(!user || !user.referredBy) return
+        if(user.referralStatus === "None" || user.referralStatus === "Done") return
+        if(user._count.bets < 10 || user._count.payments < 1) return
+        await this.addReferral(user.referredBy)
+        await prisma.user.update({
+            where: {
+                userId
+            },
+            data: {
+                referralStatus: "Done"
+            }
+        })
     }
 
 

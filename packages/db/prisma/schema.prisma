@@ -30,7 +30,7 @@ model User {
   payments   Payments[]
   wallet     Wallet?
   withdrawls Withdrawals[]
-  referralStatus ReferralStatus @default(None)
+  referralStatus ReferralStatus
 }
 
 enum ReferralStatus {
