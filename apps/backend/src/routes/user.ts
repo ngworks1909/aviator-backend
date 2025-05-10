@@ -50,8 +50,20 @@ router.post('/create', async(req, res) => {
         if(user && user.verified){
             return res.status(400).json({message: 'User already exists'})
         }
+
+        if(referralId){
+            const referralIdExists = await prisma.user.findUnique({
+                where: {
+                    referralId
+                }
+            })
+            if(!referralIdExists){
+                return res.status(400).json({message: 'Invalid Referral ID'})
+            }
+        }
         const otp = generateOtp()
         await prisma.$transaction(async(tx) => {
+
             user = await tx.user.upsert({
                 where: {
                     mobile
