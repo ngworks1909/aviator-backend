@@ -12,7 +12,7 @@ export async function sendMessage(mobile: string, otp: string) {
       axios.get(URL)
         .then((response: any) => {
           const data = response.data;
-          console.log('Response:', data);
+          return data
         })
         .catch((error: any) => {
           console.error('Error:', error);

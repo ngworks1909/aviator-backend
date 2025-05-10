@@ -45,6 +45,61 @@ class AviatorManager{
         this.game.players.delete(userId);
     }
 
+    public async checkReferral(userId: string){
+        const user = await prisma.user.findUnique({
+           where: {
+            userId
+           },
+           select: {
+            mobile: true,
+            referredBy: true
+           }
+        })
+        if(!user) return
+            await prisma.$transaction(async(tx) => {
+                if(user.referredBy){
+                    const referred = await tx.user.findUnique({
+                        where: {
+                            referralId: user.referredBy
+                        },
+                        select: {
+                            userId: true,
+                            _count: {
+                                select: {
+                                    bets: true,
+                                    payments: {
+                                        where: {
+                                            paymentStatus: 'Success'
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    })
+                    if(!referred){
+                        return
+                    }
+                    if(referred._count.bets < 10 || referred._count.payments < 1){
+                        return
+                    }
+                    await tx.user.update({
+                        where: {
+                            userId: referred.userId
+                        },
+                        data: {
+                            wallet: {
+                                update: {
+                                    bonus: {
+                                        increment: 100
+                                    }
+                                }
+                            }
+                        }
+                    })
+                }
+            })
+    }
+
 
     public addBid(user: User, amount: number){
         const userId = user.userId;
@@ -133,6 +188,8 @@ class AviatorManager{
                     roomId
                 }
             })
+
+            this.checkReferral(userId)
 
             const bet: Bid = {userId, investedAmount: amount, cashedOut: false, betId}
             this.game.biddings.set(userId, bet)
