@@ -253,8 +253,10 @@ router.get('/fetchall', verifyAdmin, async (req, res) => {
         const page = parseInt(req.query.skip as string) || 1; // Default to 1 if not provided
         const pageSize = parseInt(req.query.limit as string) || 10;
 
+        console.log(page, pageSize)
+
         // Calculate the skip and take values for pagination
-        const skip = (page - 1) * pageSize;
+        const skip = (page - 1)
         const take = pageSize;
 
         // Fetch the users from the database
