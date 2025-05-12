@@ -232,8 +232,8 @@ router.put('/resendotp', async(req, res) => {
 
 router.get('/fetchall', verifyAdmin, async (req, res) => {
     try {
-        const page = parseInt(req.query.page as string) || 1; // Default to 1 if not provided
-        const pageSize = parseInt(req.query.pageSize as string) || 10;
+        const page = parseInt(req.query.skip as string) || 1; // Default to 1 if not provided
+        const pageSize = parseInt(req.query.limit as string) || 10;
 
         // Calculate the skip and take values for pagination
         const skip = (page - 1) * pageSize;
