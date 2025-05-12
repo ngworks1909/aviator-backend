@@ -45,10 +45,10 @@ class AviatorManager{
         this.game.players.delete(userId);
     }
 
-    private async addReferral(userId: string){
+    private async addReferral(referralId: string){
         await prisma.user.update({
             where: {
-                userId
+                referralId
             },
             data: {
                 wallet: {
