@@ -42,6 +42,14 @@ router.post('/create', async(req, res) => {
             return res.status(400).json({message: 'Invalid credentials'})
         }
         const {name, mobile, referralId, deviceId} = userValidate.data;
+        const existingDevice = await prisma.user.findFirst({
+            where: {
+                deviceId
+            }
+        });
+        if(existingDevice){
+            return res.status(400).json({message: 'Device already registered'})
+        }
         let user = await prisma.user.findUnique({
             where: {
                 mobile
