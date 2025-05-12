@@ -90,7 +90,6 @@ export class AviatorGame{
         if (this._interval) return; // Prevent multiple intervals
     
         this._interval = setInterval(() => {
-            console.log(this._rate)
             if (this._rate >= this._maxRate) {
                 clearInterval(this._interval!);
                 this._interval = null; // Reset interval

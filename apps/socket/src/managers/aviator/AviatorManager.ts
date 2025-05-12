@@ -46,6 +46,7 @@ class AviatorManager{
     }
 
     private async addReferral(referralId: string){
+        console.log("Adding referral")
         await prisma.user.update({
             where: {
                 referralId
@@ -65,6 +66,7 @@ class AviatorManager{
 
 
     private async checkReferral(userId: string){
+        console.log("Checking referral")
         const user = await prisma.user.findUnique({
            where: {
             userId,
@@ -88,7 +90,8 @@ class AviatorManager{
 
         if(!user || !user.referredBy) return
         if(user.referralStatus === "None" || user.referralStatus === "Done") return
-        if(user._count.bets < 10 || user._count.payments < 1) return
+        if(user._count.bets < 10 && user._count.payments < 1) return
+        console.log("Initiating Referral")
         await this.addReferral(user.referredBy)
         await prisma.user.update({
             where: {
