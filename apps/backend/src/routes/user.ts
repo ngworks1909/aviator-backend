@@ -230,9 +230,19 @@ router.put('/resendotp', async(req, res) => {
 })
 
 
-router.get('/fetchall', verifyAdmin, async(_, res) => {
+router.get('/fetchall', verifyAdmin, async (req, res) => {
     try {
+        const page = parseInt(req.query.page as string) || 1; // Default to 1 if not provided
+        const pageSize = parseInt(req.query.pageSize as string) || 10;
+
+        // Calculate the skip and take values for pagination
+        const skip = (page - 1) * pageSize;
+        const take = pageSize;
+
+        // Fetch the users from the database
         const users = await prisma.user.findMany({
+            skip,
+            take,
             select: {
                 userId: true,
                 username: true,
@@ -257,11 +267,23 @@ router.get('/fetchall', verifyAdmin, async(_, res) => {
                 }
             }
         });
-        return res.status(200).json({users})
+
+        // Fetch total count of users to support pagination in frontend
+        const totalUsers = await prisma.user.count();
+
+        // Return the response with user data and pagination info
+        return res.status(200).json({
+            users,
+            totalUsers, // Total number of users to calculate total pages on the frontend
+            totalPages: Math.ceil(totalUsers / pageSize), // Total pages for pagination
+            currentPage: page
+        });
     } catch (error) {
-        return res.status(500).json({message: 'Internal server error'})
+        console.error(error); // Log the error for debugging
+        return res.status(500).json({ message: 'Internal server error' });
     }
-})
+});
+
 
 router.put('/suspend/:userId', verifyAdmin, async(req, res) => {
     try {
