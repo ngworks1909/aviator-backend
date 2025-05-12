@@ -124,28 +124,28 @@ class AviatorManager{
             })
             if(!wallet) return
             if(wallet.balance + wallet.bonus < amount) return
-            if(wallet.bonus >= amount){
+            if(wallet.balance >= amount){
                 await tx.wallet.update({
                     where: {
                         walletId: wallet.walletId
                     },
                     data: {
-                        bonus: {
+                        balance: {
                             decrement: amount
                         }
                     }
                 })
             }
-            else if (wallet.bonus > 0 ){
+            else if (wallet.balance > 0 ){
                 await tx.wallet.update({
                     where: {
                         walletId: wallet.walletId
                     },
                     data: {
-                        bonus: {
+                        balance: {
                             set: 0
                         },
-                        balance: {
+                        bonus: {
                             set: (wallet.balance + wallet.bonus) - amount
                         }
                     }
@@ -157,7 +157,7 @@ class AviatorManager{
                         walletId: wallet.walletId
                     },
                     data: {
-                        balance: {
+                        bonus: {
                             decrement: amount
                         }
                     }
