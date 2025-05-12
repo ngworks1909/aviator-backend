@@ -198,6 +198,16 @@ router.post('/verifyotp', async(req, res) => {
         if(otp !== user.otp){
             return res.status(400).json({message: 'Incorrect OTP'})
         }
+        if(!user.verified){
+            await prisma.user.update({
+                where: {
+                    userId: user.userId
+                },
+                data: {
+                    verified: true
+                }
+            })
+        }
 
         
         const token = jwt.sign( { mobile: user.mobile, userId: user.userId, username: user.username }, 
