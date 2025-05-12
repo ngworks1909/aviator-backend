@@ -250,7 +250,8 @@ router.get('/fetchall', verifyAdmin, async (req, res) => {
                 suspended: true,
                 wallet: {
                     select: {
-                        balance: true
+                        balance: true,
+                        bonus: true
                     }
                 },
                 bets: {
