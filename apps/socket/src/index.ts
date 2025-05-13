@@ -5,10 +5,44 @@ import { extractJwtToken } from './lib/auth'
 import {userManager} from './managers/users/UserManager'
 
 import dotenv from 'dotenv'
+import { prisma } from './lib/client'
 
 dotenv.config();
 
-const app = express()
+const app = express();
+
+
+app.get('/', async(_, res) => {
+    try {
+        const user = userManager.getUserCount();
+        const revenue = await prisma.bet.aggregate({
+            where: {
+                cashout: false
+            },
+            _sum: {
+                amount: true
+            }
+        });
+
+        const payout = await prisma.withdrawals.aggregate({
+            where: {
+                paymentStatus: "Success"
+            },
+            _sum: {
+                amount: true
+            }
+        });
+
+        return res.status(200).json({
+            user,
+            revenue: revenue._sum.amount || 0,
+            payout: payout._sum.amount || 0
+        })
+
+    } catch (error) {
+        return res.status(500).json({message: "Internal server error"})
+    }
+});
 
 
 const server = http.createServer(app);
