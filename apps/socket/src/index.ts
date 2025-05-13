@@ -3,6 +3,7 @@ import http from 'http'
 import { Server } from 'socket.io'
 import { extractJwtToken } from './lib/auth'
 import {userManager} from './managers/users/UserManager'
+import cors from 'cors'
 
 import dotenv from 'dotenv'
 import { prisma } from './lib/client'
@@ -10,6 +11,12 @@ import { prisma } from './lib/client'
 dotenv.config();
 
 const app = express();
+
+app.use(cors({
+  origin: '*', // Replace with frontend URL for production (e.g., 'https://yourapp.com')
+  methods: ['GET', 'POST'],
+  credentials: true
+}));
 
 
 app.get('/', async(_, res) => {
