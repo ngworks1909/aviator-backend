@@ -40,10 +40,20 @@ app.get('/', async(_, res) => {
             }
         });
 
+        const payment = await prisma.payments.aggregate({
+            where: {
+                paymentStatus: "Success"
+            },
+            _sum: {
+                amount: true
+            }
+        })
+
         return res.status(200).json({
             user,
             deposited: revenue._sum.amount || 0,
-            payout: payout._sum.amount || 0
+            payout: payout._sum.amount || 0,
+            secured: payment._sum.amount || 0
         })
 
     } catch (error) {
