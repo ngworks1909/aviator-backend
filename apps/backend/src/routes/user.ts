@@ -281,7 +281,8 @@ router.get('/fetchall', verifyAdmin, async (req, res) => {
                         cashoutValue: true,
                         room: {
                             select: {
-                                maxRate: true
+                                maxRate: true,
+                                createdAt: true
                             }
                         }
                     }

@@ -66,6 +66,7 @@ model Wallet {
 model Room {
   roomId  String @id
   maxRate Float
+  createdAt DateTime @default(now())
   bets    Bet[]
 }
 
