@@ -35,7 +35,7 @@ app.get('/', async(_, res) => {
 
         return res.status(200).json({
             user,
-            revenue: revenue._sum.amount || 0,
+            deposited: revenue._sum.amount || 0,
             payout: payout._sum.amount || 0
         })
 
