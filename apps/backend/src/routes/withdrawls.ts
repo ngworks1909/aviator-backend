@@ -8,6 +8,10 @@ const router = Router();
 
 router.post('/create', authenticateToken, async(req: UserRequest, res) => {
     try {
+        const isValidWithdraw = createWithdrawSchema.safeParse(req.body);
+        if(!isValidWithdraw.success){
+            return res.status(400).json({message: isValidWithdraw.error.message})
+        }
         const authUser = req.user
         if(!authUser){
             return res.status(401).json({message: 'Unauthorized'})
@@ -37,10 +41,7 @@ router.post('/create', authenticateToken, async(req: UserRequest, res) => {
             }
 
             
-            const isValidWithdraw = createWithdrawSchema.safeParse(req.body);
-            if(!isValidWithdraw.success){
-                return res.status(400).json({message: isValidWithdraw.error.message})
-            }
+            
             const {withdrawType, amount, username} = isValidWithdraw.data;
             
             if(user.wallet.balance < amount){

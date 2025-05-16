@@ -3,15 +3,15 @@ import Razorpay from 'razorpay'
 import { Router } from 'express';
 import { prisma } from '../lib/client';
 import crypto from 'crypto'
-import { createPaymentSchema } from '../zod/paymentValidator';
+import { createPaymentSchema, validatePaymentSchema } from '../zod/paymentValidator';
 import { authenticateToken, UserRequest } from '../middleware/verifyUser';
 import z from 'zod'
 import dotenv from 'dotenv'
 
 dotenv.config()
 
-const razrKey = process.env.RAZR_KEY
-const razrSecret = process.env.RAZR_SECRET ?? 'secret'
+const razrKey = process.env.RAZR_KEY!
+const razrSecret = process.env.RAZR_SECRET!
 
 
 const razorpayInstance = new Razorpay({
@@ -24,6 +24,10 @@ const router = Router()
 
 router.post('/create', authenticateToken,  async(req: UserRequest, res) => {
     try {
+        const isValidPaymentCreation = createPaymentSchema.safeParse(req.body);
+        if (!isValidPaymentCreation.success) {
+            return res.status(400).json({ message: isValidPaymentCreation.error.message });
+        }
         const authUser = req.user
         if(!authUser){
             return res.status(401).json({message: 'Unauthorized'})
@@ -43,10 +47,7 @@ router.post('/create', authenticateToken,  async(req: UserRequest, res) => {
             return res.status(400).json({ message: 'User not found' });
         }
 
-        const isValidPaymentCreation = createPaymentSchema.safeParse(req.body);
-        if (!isValidPaymentCreation.success) {
-            return res.status(400).json({ message: isValidPaymentCreation.error.message });
-        }
+        
 
         const {amount} = isValidPaymentCreation.data
   
@@ -77,8 +78,12 @@ router.post('/create', authenticateToken,  async(req: UserRequest, res) => {
 
 
   router.post('/updateRazr', async (req, res) => {
-    const { razorpay_order_id, razorpay_payment_id, razorpay_signature, status } = req.body;
-    razorpay_order_id
+
+    const isValidUpdate = validatePaymentSchema.safeParse(req.body);
+    if (!isValidUpdate.success) {
+        return res.status(400).json({ message: isValidUpdate.error.message });
+    }
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature, status } = isValidUpdate.data;
   
     // If status is failed, no need to verify signature, directly update status
     if (status === 'failed') {
@@ -97,8 +102,13 @@ router.post('/create', authenticateToken,  async(req: UserRequest, res) => {
     }
   
     const generatedSignature = crypto.createHmac('sha256', razrSecret).update(razorpay_order_id + '|' + razorpay_payment_id).digest('hex');
-    if (generatedSignature !== razorpay_signature) {
-      return res.status(400).json({ message: 'Invalid signature. Payment verification failed', rzId: `${razorpay_order_id}`, rpId: `${razorpay_payment_id}`, gensig: `${generatedSignature}`, rzSig: `${razorpay_signature}` });
+    const isValid = crypto.timingSafeEqual(
+      Buffer.from(generatedSignature, 'hex'),
+      Buffer.from(razorpay_signature, 'hex')
+    );
+    
+    if (!isValid) {
+      return res.status(400).json({ message: 'Invalid signature. Payment verification failed' });
     }
   
     try {

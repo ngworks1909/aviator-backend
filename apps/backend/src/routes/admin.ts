@@ -9,7 +9,7 @@ import { verifyAdmin } from "../middleware/verifyUser";
 const router = Router();
 
 
-router.post('/create', async(req, res) => {
+router.post('/create', verifyAdmin, async(req, res) => {
     try {
         const isValidCreate = createAdminSchema.safeParse(req.body);
         if(!isValidCreate.success){
@@ -72,7 +72,8 @@ router.post('/login', async(req, res) => {
         }
 
         const token = jwt.sign( { adminId: admin.adminId, role: admin.role, username: admin.adminName }, 
-            process.env.JWT_SECRET || "secret", 
+            process.env.JWT_SECRET!, 
+            {expiresIn: "8h"}
         );
 
         return res.status(200).json({token})

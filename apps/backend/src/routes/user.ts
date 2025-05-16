@@ -4,8 +4,32 @@ import { prisma } from '../lib/client';
 import { validateUser } from '../zod/userValidator';
 import { authenticateToken, UserRequest, verifyAdmin } from '../middleware/verifyUser';
 import { sendMessage } from '../lib/messenger';
+import rateLimit from 'express-rate-limit';
+import crypto from 'crypto';
+import bcrypt from 'bcryptjs'
 
 const router = express.Router();
+
+const authLimiter = rateLimit({
+    windowMs: 10 * 60 * 1000, // 10 minutes
+    max: 10, // 10 requests per IP
+    message: 'Too many authentication attempts, please try again later',
+    standardHeaders: true,
+});
+
+const verifylimiter = rateLimit({
+    windowMs: 10 * 60 * 1000, // 10 minutes
+    max: 10, // 10 requests per IP
+    message: 'Too many verification attempts, please try again later',
+    standardHeaders: true,
+})
+
+const resendlmiter = rateLimit({
+    windowMs: 2 * 60 * 1000, // 2 minutes
+    max: 3, // 3 requests per IP
+    message: 'Too many resend attempts, please try again later',
+    standardHeaders: true,
+})
 
 function generateReferralId() {
     const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
@@ -33,9 +57,9 @@ function generateReferralId() {
 }
 
 const generateOtp = () => {
-    return Math.floor(100000 + Math.random() * 900000).toString()
-}
-router.post('/create', async(req, res) => {
+    return crypto.randomInt(100000, 999999).toString();
+  }
+router.post('/create', authLimiter, async(req, res) => {
     try {
         const userValidate = validateUser.safeParse(req.body);
         if(!userValidate.success){
@@ -70,6 +94,8 @@ router.post('/create', async(req, res) => {
             }
         }
         const otp = generateOtp()
+        const otpHash = await bcrypt.hash(otp, 10);
+        const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000); 
         await prisma.$transaction(async(tx) => {
 
             user = await tx.user.upsert({
@@ -77,13 +103,15 @@ router.post('/create', async(req, res) => {
                     mobile
                 },
                 update: {
-                    otp,
+                    otp: otpHash,
+                    otpExpire: otpExpiresAt,
                     referredBy: referralId
                 },
                 create: {
                     username: name,
                     mobile,
-                    otp,
+                    otp: otpHash,
+                    otpExpire: otpExpiresAt,
                     referralId: generateReferralId(),
                     referredBy: referralId,
                     deviceId,
@@ -104,7 +132,7 @@ router.post('/create', async(req, res) => {
     }
 });
 
-router.post('/login', async(req, res) => {
+router.post('/login', authLimiter, async(req, res) => {
     try {
         const {mobile} = req.body;
         let user = await prisma.user.findUnique({
@@ -119,12 +147,15 @@ router.post('/login', async(req, res) => {
             return res.status(403).json({message: "User suspended"})
         }
         const otp = generateOtp()
+        const otpHash = await bcrypt.hash(otp, 10);
+        const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000); 
         user = await prisma.user.update({
             where: {
                 mobile
             },
             data: {
-                otp
+                otp: otpHash,
+                otpExpire: otpExpiresAt
             }
         });
 
@@ -176,7 +207,7 @@ router.post('/update', authenticateToken ,async(req: UserRequest, res) => {
     }
 });
 
-router.post('/verifyotp', async(req, res) => {
+router.post('/verifyotp', verifylimiter, async(req, res) => {
     try {
         const {otp, mobile} = req.body;
         const user = await prisma.user.findUnique({
@@ -185,6 +216,7 @@ router.post('/verifyotp', async(req, res) => {
             },
             select: {
                 otp: true,
+                otpExpire: true,
                 referredBy: true,
                 userId: true,
                 mobile: true,
@@ -195,9 +227,16 @@ router.post('/verifyotp', async(req, res) => {
         if(!user){
             return res.status(400).json({message: 'User not found'})
         }
-        if(otp !== user.otp){
-            return res.status(400).json({message: 'Incorrect OTP'})
+
+        if (user.otpExpire && user.otpExpire < new Date()) {
+            return res.status(400).json({ message: 'OTP expired. Please request a new one.' });
         }
+  
+        const isOtpValid = await bcrypt.compare(otp, user.otp);
+        if (!isOtpValid) {
+          return res.status(400).json({ message: 'Invalid OTP' });
+        }
+
         if(!user.verified){
             await prisma.user.update({
                 where: {
@@ -211,7 +250,7 @@ router.post('/verifyotp', async(req, res) => {
 
         
         const token = jwt.sign( { mobile: user.mobile, userId: user.userId, username: user.username }, 
-            process.env.JWT_SECRET || "secret", 
+            process.env.JWT_SECRET!, 
         );
         return res.status(200).json({token, message: 'Login successful'})
     } catch (error) {
@@ -219,7 +258,7 @@ router.post('/verifyotp', async(req, res) => {
     }
 })
 
-router.put('/resendotp', async(req, res) => {
+router.put('/resendotp', resendlmiter ,async(req, res) => {
     try {
         const {mobile} = req.body
         const user = await prisma.user.findUnique({
@@ -230,13 +269,17 @@ router.put('/resendotp', async(req, res) => {
         if(!user){
             return res.status(400).json({message: 'User not found'})
         }
-        const otp = generateOtp();
+        const otp = generateOtp()
+        const otpHash = await bcrypt.hash(otp, 10);
+        const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000); 
+        
         await prisma.user.update({
             where: {
                 mobile
             },
             data: {
-                otp
+                otp: otpHash,
+                otpExpire: otpExpiresAt
             }
         });
 
@@ -305,6 +348,7 @@ router.get('/fetchall', verifyAdmin, async (req, res) => {
         return res.status(500).json({ message: 'Internal server error' });
     }
 });
+
 
 
 router.put('/suspend/:userId', verifyAdmin, async(req, res) => {

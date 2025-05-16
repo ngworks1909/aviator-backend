@@ -13,13 +13,20 @@ export function authenticateToken(req: UserRequest, res: Response, next: NextFun
   if (!token) {
     return res.status(401).send('Unauthorized token'); // Unauthorized
   }
-  jwt.verify(token, process.env.JWT_SECRET || "secret", (err: any, user: any) => {
+  const secret = process.env.JWT_SECRET
+  if (!secret || secret.length < 13) {
+    console.error("ERROR: JWT_SECRET must be configured with a secure random string of at least 13 characters");
+    process.exit(1);
+  }
+  jwt.verify(token, secret, (err: any, user: any) => {
     if (err) {
       return res.status(403).send('Forbidden error'); // Forbidden
     }
     req.user = user; // Save user information for use in the next middleware
     next(); // Proceed to the next middleware
   });
+
+  
 }
 
 

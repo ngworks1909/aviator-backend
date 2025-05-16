@@ -19,6 +19,7 @@ model User {
   userId     String        @id @default(cuid())
   username   String
   otp        String
+  otpExpire  DateTime      @default(now())
   mobile     String        @unique
   token      String        @default("")
   suspended  Boolean       @default(false)
@@ -43,7 +44,7 @@ model Admin {
   adminId   String    @id @default(cuid())
   adminName String
   email     String    @unique
-  password  String
+  password  String    
   role      AdminRole @default(admin)
 }
 
